@@ -2,6 +2,8 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
+
 import { Provider } from "next-auth/providers/index";
 import { hashValue } from "./helpers";
 import { image } from "@markdoc/markdoc/dist/src/schema";
@@ -66,6 +68,27 @@ const configureIdentityProvider = () => {
       })
     );
   }
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      async profile(profile) {
+        const email = profile.email || "";
+        const image = await fetchProfilePicture(profile.picture, null);
+        const newProfile = {
+          ...profile,
+          email,
+          isAdmin: adminEmails?.includes(email.toLowerCase()),
+          image: image,
+        };
+        console.log("Google profile:", newProfile);
+        return newProfile;
+      },
+    })
+  );
+}
 
   // If we're in local dev, add a basic credential provider option as well
   // (Useful when a dev doesn't have access to create app registration in their tenant)
